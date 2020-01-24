@@ -1,0 +1,417 @@
+#!/bin/bash
+
+#######################################################################
+# ## Program: Scripts for Matrices
+# ## Author: Lake Peterson
+# ## Date: 01/14/2020
+# ## Description: Script for doing basic operations for matrices
+# ## Input: Uses external files of matrices
+# ## Output: Outputs results by "echo"ing the end results
+#######################################################################
+
+commandArgOne=$1                                                                #Sets a variable equal to the first command line argument
+commandArgTwo=$2                                                                #Sets a variable equal to the second command line argument
+commandArgThree=$3                                                              #Sets a variable equal to the third command line argument
+
+#######################################################################
+# ## Function: dims
+# ## Description: Gives the dimensions of the matrix
+# ## Parameters: Needs a provided matrix
+# ## Pre-Conditions: Reads in a matrix
+# ## Post-Conditions: Outputs the dimensions of the provided matrix
+#######################################################################
+
+dims()
+{
+  if [[ -z "$commandArgTwo" ]];                                                 #Check to see if a command argument exists, if not allow user input
+  then
+    matrix="${1:-/dev/stdin}"
+  elif [[ ! -e "$commandArgTwo" ]];                                             #Check to see if a file exists
+  then
+    echo -e "\nYou provided a file that does not exist!\n" 1>&2
+    exit 1
+  elif [[ -n "$commandArgTwo" ]];                                               #If everything is valid continue on with function
+  then
+    matrix="$commandArgTwo"
+  fi
+
+  row=0
+  column=0
+
+  while read line                                                               #Traversing through matrix and keeping track of rows and columns
+  do
+    column=0
+    for i in $line
+    do
+      column=$(( column + 1 ))
+    done
+    row=$(( row + 1 ))
+  done < "$matrix"
+
+  echo "$row $column"                                                           #Prints out the dimensions of the given matrix
+
+  return 0
+}
+
+#######################################################################
+# ## Function: add
+# ## Description: Adds two matrices of the same dimensions
+# ## Parameters: Matrices must be the same dimensions
+# ## Pre-Conditions: Matrices are have equal rows and columns
+# ## Post-Conditions: Adds the two matrices using matrix addition rules
+#######################################################################
+
+add()
+{
+  if [[ ! -e "$commandArgTwo" ]];                                               #Check to see if a file exists
+  then
+    echo -e "\nYou provided a file that does not exist!\n" 1>&2
+    exit 1
+  elif [[ ! -e "$commandArgThree" ]];                                           #Check to see if a file exists
+  then
+    echo -e "\nYou provided a file that does not exist!\n" 1>&2
+    exit 1
+  elif [[ -n "$commandArgTwo" ]] && [[ -n "$commandArgThree" ]];                #If everything is valid continue on with function
+  then
+    matrixOne="$commandArgTwo"
+    matrixTwo="$commandArgThree"
+  fi
+
+  rowMatrixOne=0
+  rowMatrixTwo=0
+  columnMatrixOne=0
+  columnMatrixTwo=0
+
+  while read line                                                               #Traversing through matrixOne and keeping track of rows and columns
+  do
+    columnMatrixOne=0
+    for i in $line
+    do
+      columnMatrixOne=$(( columnMatrixOne + 1 ))
+    done
+    rowMatrixOne=$(( rowMatrixOne + 1 ))
+  done < "$matrixOne"
+
+  while read line                                                               #Traversing through matrixTwo and keeping track of rows and columns
+  do
+    columnMatrixTwo=0
+    for i in $line
+    do
+      columnMatrixTwo=$(( columnMatrixTwo + 1 ))
+    done
+    rowMatrixTwo=$(( rowMatrixTwo + 1 ))
+  done < "$matrixTwo"
+
+  if [[ $columnMatrixOne -eq $columnMatrixTwo ]] && [[ $rowMatrixOne -eq $rowMatrixTwo ]];  #Check if the two matrices can be added
+  then
+    declare -A addMatrix
+    matrixOneArray=(`cat "$matrixOne"`)
+    matrixTwoArray=(`cat "$matrixTwo"`)
+    length=${#matrixOneArray[@]}
+    width=$columnMatrixOne-1
+    index=0
+
+    for (( i=0; i<"${length}"; i++ ))                                           #Adds each value at each index for the two matrices
+    do
+      addMatrix=`expr ${matrixOneArray[$i]} + ${matrixTwoArray[$i]}`
+      echo -ne "$addMatrix"
+
+      index=$(( index + 1 ))
+
+      if [[ $index -lt $width+1 ]];                                             #Condition used to correctly print out the the added matrices
+      then
+        echo -ne "\t"
+      fi
+      if [[ $index -eq $width+1 ]];
+      then
+        echo
+        index=0
+      fi
+    done
+  else
+      echo "The two matrices you have provided are not the same!" 1>&2          #Output that says that matrices can not be added.
+      exit 3
+  fi
+
+  return 0
+}
+
+#######################################################################
+# ## Function: mean
+# ## Description: Finds the mean of the provided matrix
+# ## Parameters: Needs a provided matrix
+# ## Pre-Conditions: Reads in a matrix
+# ## Post-Conditions: Calctulates the mean of each column in the matrix
+#######################################################################
+
+mean()
+{
+  if [[ -z "$commandArgTwo" ]];                                                 #Check to see if a command argument exists, if not allow user input
+  then
+    matrix="${1:-/dev/stdin}"
+  elif [[ ! -e "$commandArgTwo" ]];                                             #Check to see if a file exists
+  then
+    echo -e "\nYou provided a file that does not exist!\n" 1>&2
+    exit 1
+  elif [[ -n "$commandArgTwo" ]];                                               #If everything is valid continue on with function
+  then
+    matrix="$commandArgTwo"
+  fi
+
+  row=0
+  column=0
+  index=0
+
+  while read line                                                               #Traversing through matrix and keeping track of rows and columns
+  do
+    column=0
+    for i in $line
+    do
+      column=$(( column + 1 ))
+    done
+    row=$(( row + 1 ))
+  done < "$matrix"
+
+  matrix=(`cat "$commandArgTwo"`)
+  width=$(( row ))
+
+  for (( i = 0; i <"$column"; i++ ));                                           #Traversing through the matrix and getting the average of each column
+  do
+    mean=0
+    sum=0
+
+    for (( j = 0; j < "$row"; j++ ));
+    do
+
+      if [[ $count -eq $width ]];                                               #Resets count and index, which aids in calculating the correct sum
+      then
+        index=$i
+        count=0
+      fi
+
+      sum=$(( $sum + ${matrix[$index]} ))                                       #Calculates the sum of each column
+      index=$(( index + column ))
+      count=$(( count + 1 ))
+    done
+                                                                                #Calculates the mean of each column
+    mean=$(( ($sum + ($row/2)*( ($sum>0)*2-1 )) / $row ))
+    echo -ne "$mean"
+    if [[ $i -lt $column-1 ]];                                                  #Condition used to correctly print out the the mean of each column
+    then
+      echo -ne "\t"
+    fi
+
+  done
+
+  echo
+
+  return 0
+}
+
+#######################################################################
+# ## Function: transpose
+# ## Description: Switches the matrices columns and rows
+# ## Parameters: A matrix must be provided from the command line
+# ## Pre-Conditions: The matrix is copied
+# ## Post-Conditions: The copied matrix has its rows and columns flipped
+#######################################################################
+
+transpose()
+{
+  if [[ -z "$commandArgTwo" ]];                                                 #Check to see if a command argument exists, if not allow user input
+  then
+    matrix="${1:-/dev/stdin}"
+  elif [[ ! -e "$commandArgTwo" ]];                                             #Check to see if a file exists
+  then
+    echo -e "\nYou provided a file that does not exist!\n" 1>&2
+    exit 1
+  elif [[ -n "$commandArgTwo" ]];                                               #Check to see if the file is readable. If it is readable continue
+  then                                                                          #with function
+    if [[ ! -r "$commandArgTwo" ]];
+    then
+      echo -e "\nYou provided a file that is unreadable!\n" 1>&2
+      exit 1
+    else
+      matrix="$commandArgTwo"
+    fi
+  fi
+
+  declare -A copiedMatrix
+  declare -A tempMatrix
+  row=0
+  column=0
+
+  while read line                                                               #Traversing through matrix and keeping track of rows and columns
+  do
+    column=0
+    for i in $line
+    do
+      copiedMatrix[$row,$column]=$i                                             #Creating a 2-D matrix from the matrix that was provided
+      column=$(( column + 1 ))
+    done
+    row=$(( row + 1 ))
+  done < "$matrix"
+
+  for (( i = 0; i < $column; i++ ));                                            #Traversing through the matrix in a way that will transpose the matrix
+  do
+    for (( j = 0; j < $row; j++ ));
+    do
+      echo -ne "${copiedMatrix[$j,$i]}"
+      if [[ $j -lt $row-1 ]];                                                   #Condition used to correctly print out the the transposed matrix
+      then
+        echo -ne "\t"
+      fi
+    done
+    echo
+  done
+
+  return 0
+}
+
+#######################################################################
+# ## Function: multiply
+# ## Description: Multiplies two matrices
+# ## Parameters: A MxN and NxP must be provided
+# ## Pre-Conditions: Matrices must follow rules for matrix multiplication
+# ## Post-Conditions: Multiplies the two matrices using matrix multiplication rules
+#######################################################################
+
+multiply()
+{
+  if [[ ! -e "$commandArgTwo" ]];                                               #Check to see if a file exists
+  then
+    echo -e "\nYou provided a file that does not exist!\n" 1>&2
+    exit 1
+  elif [[ ! -e "$commandArgThree" ]];                                           #Check to see if a file exists
+  then
+    echo -e "\nYou provided a file that does not exist!\n" 1>&2
+    exit 1
+  elif [[ -n "$commandArgTwo" ]] && [[ -n "$commandArgThree" ]];                #If everything is valid continue on with function
+  then
+    tempOne="$commandArgTwo"
+    tempTwo="$commandArgThree"
+  fi
+
+  declare -A matrixOne
+  declare -A matrixTwo
+  rowMatrixOne=0
+  rowMatrixTwo=0
+  columnMatrixOne=0
+  columnMatrixTwo=0
+
+  while read line                                                               #Traversing through matrixOne and keeping track of rows and columns
+  do
+    columnMatrixOne=0
+    for i in $line
+    do
+      matrixOne[$rowMatrixOne,$columnMatrixOne]=$i                              #Creating a 2-D matrix from the first matrix that was provided
+      columnMatrixOne=$(( columnMatrixOne + 1 ))
+    done
+    rowMatrixOne=$(( rowMatrixOne + 1 ))
+  done < "$tempOne"
+
+  while read line                                                               #Traversing through matrixTwo and keeping track of rows and columns
+  do
+    columnMatrixTwo=0
+    for i in $line
+    do
+      matrixTwo[$rowMatrixTwo,$columnMatrixTwo]=$i                              #Creating a 2-D matrix from the second matrix that was provided
+      columnMatrixTwo=$(( columnMatrixTwo + 1 ))
+    done
+    rowMatrixTwo=$(( rowMatrixTwo + 1 ))
+  done < "$tempTwo"
+
+  if [[ $columnMatrixOne -eq $rowMatrixTwo ]];                                  #Check if the two matrices can be multiplied
+  then
+
+    declare -A multipliedMatrix
+    mult=0
+
+    for (( i = 0; i < $rowMatrixOne; i++ ));                                    #Traversing through the matrices in a way that will multiply
+    do                                                                          #the two matrices
+      for (( j = 0; j < $columnMatrixTwo; j++ ));
+      do
+        for (( k = 0; k < $rowMatrixTwo; k++ ));
+        do
+          mult=$(( ${matrixOne[$i,$k]} * ${matrixTwo[$k,$j]} ))                 #multipling the two matrices at specific positions in order to
+          multipliedMatrix[$i,$j]=$(( ${multipliedMatrix[$i,$j]} + $mult ))     #produce a final matrix that follows the rules of matrix multiplication
+        done
+      done
+    done
+
+    for (( i = 0; i < $rowMatrixOne; i++ ));                                    #Traversing through the multiplied matrix and printing it out
+    do
+      for (( j = 0; j < $columnMatrixTwo; j++ ));
+      do
+        echo -ne "${multipliedMatrix[$i,$j]}"
+        if [[ $j -lt $columnMatrixTwo-1 ]];                                     #Condition used to correctly print out the the multiplied matrix
+        then
+          echo -ne "\t"
+        fi
+      done
+      echo
+    done
+  else                                                                          #Output that says that matrices can not be added.
+    echo "The two matrices you have provided do not fit the dimensional requirements in order to be multiplied!" 1>&2
+    exit 3
+  fi
+
+  return 0
+}
+
+#######################################################################
+# ## Description: Directs program to the correct functions
+# ## Parameters: Must use command line arguments
+# ## Pre-Conditions: Command arguments must be present
+# ## Post-Conditions: Correctly directs programs to the correct function
+#######################################################################
+
+if [[ $commandArgOne == "dims" ]];                                              #Check to see if the first command argument matches dims
+then
+  if [[ $# -eq 1 ]] || [[ $# -eq 2 ]];                                          #Checks to see if the correct amount of command arguments exist
+  then
+    dims                                                                        #Calls the dims function
+  else
+    echo -e "\nYou have to many command line arguments!\n" 1>&2
+    exit 2
+  fi
+elif [[ $commandArgOne == "add" ]];                                             #Check to see if the first command argument matches add
+then
+  if [[ $# -eq 1 ]] || [[ $# -eq 2 ]] || [[ $# -eq 3 ]];                        #Checks to see if the correct amount of command arguments exist
+  then
+    add                                                                         #Calls the add function
+  else
+    echo -e "\nYou have to many command line arguments!\n" 1>&2
+    exit 2
+  fi
+elif [[ $commandArgOne == "mean" ]];                                            #Check to see if the first command argument matches mean
+then
+  if [[ $# -eq 1 ]] || [[ $# -eq 2 ]];                                          #Checks to see if the correct amount of command arguments exist
+  then
+    mean                                                                        #Calls the mean function
+  else
+    echo -e "\nYou have to many command line arguments!\n" 1>&2
+    exit 2
+  fi
+elif [[ $commandArgOne == "transpose" ]];                                       #Check to see if the first command argument matches tanspose
+then
+  if [[ $# -eq 1 ]] || [[ $# -eq 2 ]];                                          #Checks to see if the correct amount of command arguments exist
+  then
+    transpose                                                                   #Calls the transpose function
+  else
+    echo -e "\nYou have to many command line arguments!\n" 1>&2
+    exit 2
+  fi
+elif [[ $commandArgOne == "multiply" ]];                                        #Check to see if the first command argument matches multiply
+then
+  if [[ $# -eq 1 ]] || [[ $# -eq 2 ]] || [[ $# -eq 3 ]];                        #Checks to see if the correct amount of command arguments exist
+  then
+    multiply                                                                    #Calls the multiply function
+  else
+    echo -e "\nYou have to many command line arguments!\n" 1>&2
+    exit 2
+  fi
+else
+  echo -e "\nYou have bad command arguments!\n" 1>&2                            #Checks to see if the command arguments are valid
+  exit 2
+fi
