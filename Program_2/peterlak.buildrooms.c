@@ -18,7 +18,7 @@ typedef struct
 {
   int connection[MAX_CONNECTIONS];
   int numConnections;
-  char roomName[10];
+  char roomName[7];
   char type;
 } buildRoom;
 
@@ -31,6 +31,7 @@ int randNum();
 int checkGraph(buildRoom*);
 int checkRoomExists(buildRoom, int);
 void printRooms(buildRoom*);
+void freeMemory(buildRoom*);
 /* void createDirectory(); */
 /* void createRoomNames(char*); */
 
@@ -55,13 +56,16 @@ buildRoom* createRoomStructs()
   createConnections(rooms);
 
 
+
   printRooms(rooms);
+
+  freeMemory(rooms);
 
 }
 
 void initializeStruct(buildRoom* rooms)
 {
-  int i;
+  int i = 0;
   int roomSize = 7;
 
   for(i = 0; i < roomSize; i++)
@@ -74,7 +78,7 @@ void createRooms(buildRoom* rooms)
 {
   char* letterRooms[7] = {"a_room", "b_room", "c_room", "d_room", "e_room", "f_room", "g_room"};
   int roomSize = 7;
-  int i;
+  int i = 0;
 
   for(i = 0; i < roomSize; i++)
   {
@@ -85,11 +89,11 @@ void createRooms(buildRoom* rooms)
 void createTypes(buildRoom* rooms)
 {
   int roomSize = 7;
-  int randomNum;
+  int randomNum = 0;
   int count = 0;
-  int tempOne;
-  int tempTwo;
-  int i;
+  int tempOne = 0;
+  int tempTwo = 0;
+  int i = 0;
 
   while(count != 3)
   {
@@ -123,9 +127,10 @@ void createTypes(buildRoom* rooms)
 
 void createConnections(buildRoom* rooms)
 {
+  int i = 0;
+
   while(checkGraph(rooms) == 0)
   {
-    int i;
     for(i = 0; i < 7; i++)
     {
       int randomConnection = randNum(0, 6);
@@ -161,7 +166,7 @@ int randNum(int floor, int ceiling)
 
 int checkGraph(buildRoom* rooms)
 {
-  int i;
+  int i = 0;
   int roomSize = 7;
 
   for(i = 0; i < roomSize; i++)
@@ -176,11 +181,11 @@ int checkGraph(buildRoom* rooms)
 
 int checkRoomExists(buildRoom rooms, int randomConnection)
 {
-  int k;
+  int i = 0;
 
-  for(k = 0; k < rooms.numConnections; k++)
+  for(i = 0; i < rooms.numConnections; i++)
   {
-    if(rooms.connection[k] == randomConnection)
+    if(rooms.connection[i] == randomConnection)
     {
       return 1;
     }
@@ -191,8 +196,8 @@ int checkRoomExists(buildRoom rooms, int randomConnection)
 void printRooms(buildRoom* rooms)
 {
   int roomSize = 7;
-  int i;
-  int j;
+  int i = 0;
+  int j = 0;
 
   printf("\n");
 
@@ -208,6 +213,11 @@ void printRooms(buildRoom* rooms)
     }
   printf("\n\n");
   }
+}
+
+void freeMemory(buildRoom* rooms)
+{
+  free(rooms);
 }
 
 
