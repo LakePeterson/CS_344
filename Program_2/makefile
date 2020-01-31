@@ -3,4 +3,4 @@ rooms: peterlak.buildrooms.c
 adv: peterlak.adventure.c
 	gcc -std=c89 -o peterlak.adventure peterlak.adventure.c
 clean:
-	sudo rm -rf *.o peterlak.adventure peterlak.buildrooms peterlak.buildrooms.1*
+	rm -rf *.o peterlak.adventure peterlak.buildrooms peterlak.buildrooms.1*

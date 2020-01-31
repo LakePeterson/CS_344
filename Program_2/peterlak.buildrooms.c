@@ -8,111 +8,263 @@
 **********************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define MIN_CONNECTIONS (int)3
 #define MAX_CONNECTIONS (int)6
 
-void createRoomStructs();
-// void createDirectory();
-// void createRoomNames(char*);
-
 typedef struct
 {
-  //struct buildRoom* connection[MAX_CONNECTIONS];
+  int connection[MAX_CONNECTIONS];
   int numConnections;
-  char roomName[6];
+  char roomName[10];
   char type;
-}buildRoom;
+} buildRoom;
+
+buildRoom* createRoomStructs();
+void initializeStruct(buildRoom*);
+void createRooms(buildRoom*);
+void createTypes(buildRoom*);
+void createConnections(buildRoom*);
+int randNum();
+int checkGraph(buildRoom*);
+int checkRoomExists(buildRoom, int);
+void printRooms(buildRoom*);
+/* void createDirectory(); */
+/* void createRoomNames(char*); */
 
 int main()
 {
-  // createDirectory();
+  /* createDirectory(); */
+
+  srand(time(0));
 
   createRoomStructs();
-
 
   return 0;
 }
 
-void createRoomStructs()
+buildRoom* createRoomStructs()
 {
-    // struct buildRoom* room[7];
-    // char* letterRooms[7] = {"a_room", "b_room", "c_room", "d_room", "e_room", "f_room", "g_room"};
-    // int roomSize = 7;
-    // int i;
+  buildRoom* rooms = malloc(7 * sizeof(buildRoom));
 
-    // printf("HRERERER");
-
-
-
-    buildRoom rooms[7];
-    strcpy(rooms[0].roomName, "Crowther");
-    printf("%s\n", rooms[0].roomName);
+  initializeStruct(rooms);
+  createRooms(rooms);
+  createTypes(rooms);
+  createConnections(rooms);
 
 
-    //printf("%s\n", roomList[0]->roomName);
-
-
-
-    //
-    // printf("%s\n", room[0]->roomName);
-
-    // for(i = 0; i < roomSize; i++)
-    // {
-    //   strcpy(names[0]->roomNames, rooms[i]);
-    // }
-
-
-    // for(i = 0; i < roomSize; i++)
-    // {
-    //
-    //
-    //
-    //
-    //   sprintf(filePath, "./%s/%s", directory, roomName[i]);
-    //   outFile = fopen(filePath, "w");
-    // }
-
-    // struct Room* roomList[7];
-    // strcpy(roomList[0]->name, "Crowther");
-    // strcpy(roomList[1]->name, "Dungeon");
-    // strcpy(roomList[2]->name, "PLUGH");
-    // strcpy(roomList[3]->name, "PLOVER");
-    // strcpy(roomList[4]->name, "twisty");
-    // strcpy(roomList[5]->name, "XYZZY");
-    // strcpy(roomList[6]->name, "Zork");
+  printRooms(rooms);
 
 }
 
+void initializeStruct(buildRoom* rooms)
+{
+  int i;
+  int roomSize = 7;
 
-// void createDirectory()
-// {
-//   int getPID = getpid();
-//   char stringPID[50];
-//   char directory[100] = "peterlak.buildrooms.";
-//
-//   sprintf(stringPID, "%d", getPID);
-//   strcat(directory, stringPID);
-//
-//   mkdir(directory, 0700);
-//
-//   createRoomNames(directory);
-// }
-//
-// void createRoomNames(char* directory)
-// {
-//   char filePath[100];
-//   char* roomName[7] = {"a_room", "b_room", "c_room", "d_room", "e_room", "f_room", "g_room"};
-//   FILE* outFile;
-//   int roomSize = 7;
-//   int i;
-//
-//   for(i = 0; i < roomSize; i++)
-//   {
-//     sprintf(filePath, "./%s/%s", directory, roomName[i]);
-//     outFile = fopen(filePath, "w");
-//   }
-//
-//   fclose(outFile);
-// }
+  for(i = 0; i < roomSize; i++)
+  {
+    rooms[i].numConnections = 0;
+  }
+}
+
+void createRooms(buildRoom* rooms)
+{
+  char* letterRooms[7] = {"a_room", "b_room", "c_room", "d_room", "e_room", "f_room", "g_room"};
+  int roomSize = 7;
+  int i;
+
+  for(i = 0; i < roomSize; i++)
+  {
+    strcpy(rooms[i].roomName, letterRooms[i]);
+  }
+}
+
+void createTypes(buildRoom* rooms)
+{
+  int roomSize = 7;
+  int randomNum;
+  int count = 0;
+  int tempOne;
+  int tempTwo;
+  int i;
+
+  while(count != 3)
+  {
+    randomNum = randNum(0, 6);
+
+    if(count == 0)
+    {
+      rooms[randomNum].type = 's';
+      tempOne = randomNum;
+      count++;
+    }
+    else if(count == 1 && randomNum != tempOne)
+    {
+      tempTwo = randomNum;
+      rooms[randomNum].type = 'e';
+      count++;
+    }
+    else if(count == 2 && randomNum != tempOne && randomNum != tempTwo)
+    {
+      for(i = 0; i < roomSize; i++)
+      {
+        if(rooms[i].type != 'e' && rooms[i].type != 's')
+        {
+          rooms[i].type = 'm';
+        }
+      }
+      count++;
+    }
+  }
+}
+
+void createConnections(buildRoom* rooms)
+{
+  while(checkGraph(rooms) == 0)
+  {
+    int i;
+    for(i = 0; i < 7; i++)
+    {
+      int randomConnection = randNum(0, 6);
+      while (checkRoomExists(rooms[i], randomConnection) || randomConnection == i || rooms[randomConnection].numConnections >= 6)
+      {
+        if(rooms[i].numConnections >= 6)
+        {
+          break;
+        }
+        randomConnection = randNum(0, 6);
+      }
+      rooms[i].connection[rooms[i].numConnections] = randomConnection;
+      rooms[randomConnection].connection[rooms[randomConnection].numConnections] = i;
+      rooms[i].numConnections++;
+      rooms[randomConnection].numConnections++;
+
+      if(checkGraph(rooms) == 1)
+      {
+        break;
+      }
+    }
+  }
+}
+
+int randNum(int floor, int ceiling)
+{
+  int number;
+
+  number = (rand() % (ceiling - floor + 1)) + floor;
+
+  return number;
+}
+
+int checkGraph(buildRoom* rooms)
+{
+  int i;
+  int roomSize = 7;
+
+  for(i = 0; i < roomSize; i++)
+  {
+    if(rooms[i].numConnections < 3)
+    {
+      return 0; /*FALSE*/
+    }
+  }
+  return 1; /*TRUE*/
+}
+
+int checkRoomExists(buildRoom rooms, int randomConnection)
+{
+  int k;
+
+  for(k = 0; k < rooms.numConnections; k++)
+  {
+    if(rooms.connection[k] == randomConnection)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+void printRooms(buildRoom* rooms)
+{
+  int roomSize = 7;
+  int i;
+  int j;
+
+  printf("\n");
+
+  for(i = 0; i < roomSize; i++)
+  {
+    printf("Name: %s\n", rooms[i].roomName);
+    printf("Type: %c\n", rooms[i].type);
+    printf("NumConnections: %d\n", rooms[i].numConnections);
+    printf("Connections: ");
+    for (j = 0; j < rooms[i].numConnections; j++)
+    {
+      printf("%s ", rooms[rooms[i].connection[j]].roomName);
+    }
+  printf("\n\n");
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+void createDirectory()
+{
+  int getPID = getpid();
+  char stringPID[50];
+  char directory[100] = "peterlak.buildrooms.";
+
+  sprintf(stringPID, "%d", getPID);
+  strcat(directory, stringPID);
+
+  mkdir(directory, 0700);
+
+  createRoomNames(directory);
+}
+
+void createRoomNames(char* directory)
+{
+  char filePath[100];
+  char* roomName[7] = {"a_room", "b_room", "c_room", "d_room", "e_room", "f_room", "g_room"};
+  FILE* outFile;
+  int roomSize = 7;
+  int i;
+
+  for(i = 0; i < roomSize; i++)
+  {
+    sprintf(filePath, "./%s/%s", directory, roomName[i]);
+    outFile = fopen(filePath, "w");
+  }
+
+  fclose(outFile);
+}
+*/
