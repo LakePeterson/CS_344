@@ -31,15 +31,12 @@ void createConnections(buildRoom*);
 int randNum();
 int checkGraph(buildRoom*);
 int checkRoomExists(buildRoom, int);
-void printRooms(buildRoom*);
+void createDirectory(buildRoom*);
+void writeRooms(buildRoom*, char*);
 void freeMemory(buildRoom*, int*);
-/* void createDirectory(); */
-/* void createRoomNames(char*); */
 
 int main()
 {
-  /* createDirectory(); */
-
   srand(time(0));
 
   createRoomStructs();
@@ -56,11 +53,8 @@ buildRoom* createRoomStructs()
   createRooms(rooms, selectedRooms);
   createTypes(rooms);
   createConnections(rooms);
-
-  printRooms(rooms);
-
+  createDirectory(rooms);
   freeMemory(rooms, selectedRooms);
-
 }
 
 void initializeStruct(buildRoom* rooms)
@@ -97,7 +91,7 @@ int* randPickRooms(int* selectedRooms)
 
 void createRooms(buildRoom* rooms, int* selectedRooms)
 {
-  char* letterRooms[10] = {"a_room", "b_room", "c_room", "d_room", "e_room", "f_room", "g_room", "h_room", "i_room", "j_room"};
+  char* letterRooms[10] = {"aRoom", "bRoom", "cRoom", "dRoom", "eRoom", "fRoom", "gRoom", "hRoom", "iRoom", "jRoom"};
   int* selection;
   int roomSize = 7;
   int i = 0;
@@ -231,62 +225,7 @@ int checkRoomExists(buildRoom rooms, int randomConnection)
   return 0;
 }
 
-void printRooms(buildRoom* rooms)
-{
-  int roomSize = 7;
-  int i = 0;
-  int j = 0;
-
-  printf("\n");
-
-  for(i = 0; i < roomSize; i++)
-  {
-    printf("Name: %s\n", rooms[i].roomName);
-    printf("Type: %c\n", rooms[i].type);
-    printf("NumConnections: %d\n", rooms[i].numConnections);
-    printf("Connections: ");
-    for (j = 0; j < rooms[i].numConnections; j++)
-    {
-      printf("%s ", rooms[rooms[i].connection[j]].roomName);
-    }
-  printf("\n\n");
-  }
-}
-
-void freeMemory(buildRoom* rooms, int* selectedRooms)
-{
-  free(rooms);
-  free(selectedRooms);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-void createDirectory()
+void createDirectory(buildRoom* rooms)
 {
   int getPID = getpid();
   char stringPID[50];
@@ -297,23 +236,46 @@ void createDirectory()
 
   mkdir(directory, 0700);
 
-  createRoomNames(directory);
+  writeRooms(rooms, directory);
 }
 
-void createRoomNames(char* directory)
+void writeRooms(buildRoom* rooms, char* directory)
 {
-  char filePath[100];
-  char* roomName[7] = {"a_room", "b_room", "c_room", "d_room", "e_room", "f_room", "g_room"};
-  FILE* outFile;
+  FILE* outputFiles;
   int roomSize = 7;
-  int i;
+  char filePath[50];
+  int i = 0;
+  int j = 0;
 
   for(i = 0; i < roomSize; i++)
   {
-    sprintf(filePath, "./%s/%s", directory, roomName[i]);
-    outFile = fopen(filePath, "w");
-  }
+    sprintf(filePath, "./%s/%s", directory, rooms[i].roomName);
+    outputFiles = fopen(filePath, "w");
+    fprintf(outputFiles, "ROOM NAME: %s\n", rooms[i].roomName);
 
-  fclose(outFile);
+    for (j = 0; j < rooms[i].numConnections; j++)
+    {
+      fprintf(outputFiles, "CONNECTION %d: %s\n", j+1, rooms[rooms[i].connection[j]].roomName);
+    }
+
+    if(rooms[i].type == 's')
+    {
+      fprintf(outputFiles, "ROOM TYPE: START_ROOM\n");
+    }
+    else if(rooms[i].type == 'm')
+    {
+      fprintf(outputFiles, "ROOM TYPE: MID_ROOM\n");
+    }
+    else
+    {
+      fprintf(outputFiles, "ROOM TYPE: END_ROOM\n");
+    }
+    fclose(outputFiles);
+  }
 }
-*/
+
+void freeMemory(buildRoom* rooms, int* selectedRooms)
+{
+  free(rooms);
+  free(selectedRooms);
+}
