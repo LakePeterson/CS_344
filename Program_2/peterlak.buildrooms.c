@@ -24,14 +24,15 @@ typedef struct
 
 buildRoom* createRoomStructs();
 void initializeStruct(buildRoom*);
-void createRooms(buildRoom*);
+int* randPickRooms(int*);
+void createRooms(buildRoom*, int*);
 void createTypes(buildRoom*);
 void createConnections(buildRoom*);
 int randNum();
 int checkGraph(buildRoom*);
 int checkRoomExists(buildRoom, int);
 void printRooms(buildRoom*);
-void freeMemory(buildRoom*);
+void freeMemory(buildRoom*, int*);
 /* void createDirectory(); */
 /* void createRoomNames(char*); */
 
@@ -49,17 +50,16 @@ int main()
 buildRoom* createRoomStructs()
 {
   buildRoom* rooms = malloc(7 * sizeof(buildRoom));
+  int* selectedRooms = malloc(7 * sizeof(int));
 
   initializeStruct(rooms);
-  createRooms(rooms);
+  createRooms(rooms, selectedRooms);
   createTypes(rooms);
   createConnections(rooms);
 
-
-
   printRooms(rooms);
 
-  freeMemory(rooms);
+  freeMemory(rooms, selectedRooms);
 
 }
 
@@ -74,15 +74,39 @@ void initializeStruct(buildRoom* rooms)
   }
 }
 
-void createRooms(buildRoom* rooms)
+int* randPickRooms(int* selectedRooms)
 {
-  char* letterRooms[7] = {"a_room", "b_room", "c_room", "d_room", "e_room", "f_room", "g_room"};
+  int pick;
   int roomSize = 7;
   int i = 0;
 
   for(i = 0; i < roomSize; i++)
   {
-    strcpy(rooms[i].roomName, letterRooms[i]);
+    pick = randNum(0, 9);
+
+    while(checkPick(selectedRooms, roomSize, pick) == 1)
+    {
+      pick = randNum(0, 9);
+    }
+
+    selectedRooms[i] = pick;
+  }
+
+  return selectedRooms;
+}
+
+void createRooms(buildRoom* rooms, int* selectedRooms)
+{
+  char* letterRooms[10] = {"a_room", "b_room", "c_room", "d_room", "e_room", "f_room", "g_room", "h_room", "i_room", "j_room"};
+  int* selection;
+  int roomSize = 7;
+  int i = 0;
+
+  selection = randPickRooms(selectedRooms);
+
+  for(i = 0; i < roomSize; i++)
+  {
+    strcpy(rooms[i].roomName, letterRooms[selection[i]]);
   }
 }
 
@@ -134,7 +158,7 @@ void createConnections(buildRoom* rooms)
     for(i = 0; i < 7; i++)
     {
       int randomConnection = randNum(0, 6);
-      while (checkRoomExists(rooms[i], randomConnection) || randomConnection == i || rooms[randomConnection].numConnections >= 6)
+      while(checkRoomExists(rooms[i], randomConnection) || randomConnection == i || rooms[randomConnection].numConnections >= 6)
       {
         if(rooms[i].numConnections >= 6)
         {
@@ -162,6 +186,20 @@ int randNum(int floor, int ceiling)
   number = (rand() % (ceiling - floor + 1)) + floor;
 
   return number;
+}
+
+int checkPick(int* selectedRooms, int roomSize, int pick)
+{
+  int i = 0;
+
+  for(i = 0; i < roomSize; i++)
+  {
+    if(selectedRooms[i] == pick)
+    {
+      return 1; /*FALSE*/
+    }
+  }
+  return 0; /*TRUE*/
 }
 
 int checkGraph(buildRoom* rooms)
@@ -215,9 +253,10 @@ void printRooms(buildRoom* rooms)
   }
 }
 
-void freeMemory(buildRoom* rooms)
+void freeMemory(buildRoom* rooms, int* selectedRooms)
 {
   free(rooms);
+  free(selectedRooms);
 }
 
 
