@@ -229,7 +229,7 @@ void createDirectory(buildRoom* rooms)
 {
   int getPID = getpid();
   char stringPID[50];
-  char directory[100] = "peterlak.buildrooms.";
+  char directory[100] = "peterlak.rooms.";
 
   sprintf(stringPID, "%d", getPID);
   strcat(directory, stringPID);
