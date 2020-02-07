@@ -1,5 +1,5 @@
 adv: peterlak.adventure.c
-	gcc -std=c89 -o peterlak.adventure peterlak.adventure.c
+	gcc -std=c89 -o peterlak.adventure peterlak.adventure.c -lpthread
 rooms: peterlak.buildrooms.c
 	gcc -std=c89 -o peterlak.buildrooms peterlak.buildrooms.c
 clean:

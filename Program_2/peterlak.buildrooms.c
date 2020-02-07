@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MIN_CONNECTIONS (int)3
 #define MAX_CONNECTIONS (int)6
 
 typedef struct
