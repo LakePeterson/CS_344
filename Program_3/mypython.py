@@ -20,15 +20,15 @@ import string
 
 def randLetterGenerator(amount):
 
-    letterArray = []
+    stringOfLetters = ""
 
     for i in range(amount):
         letterPick = random.choice(string.ascii_lowercase)
-        letterArray.append(letterPick)
+        stringOfLetters += letterPick
 
-    #letterArray.append("\n")
+    stringOfLetters += "\n"
 
-    print(letterArray)
+    return stringOfLetters
 
 #######################################################################
 # ## Function:
@@ -40,9 +40,23 @@ def randLetterGenerator(amount):
 
 def fileIO():
 
-    file openFile
+    fileA = open("fileA.txt", "w+")
+    fileB = open("fileB.txt", "w+")
+    fileC = open("fileC.txt", "w+")
 
-    openFile = "fileOne.txt, w+"
+    fileA.write(randLetterGenerator(10))
+    fileB.write(randLetterGenerator(10))
+    fileC.write(randLetterGenerator(10))
+
+    # with open(fileA) as f:
+    #     content = f.readlines()
+    #     print(f)
+
+    # print(tempstr)
+
+    fileA.close
+    fileB.close
+    fileC.close
 
 #######################################################################
 # ## Function: main
@@ -50,10 +64,8 @@ def fileIO():
 
 def main():
 
-    fileIO
+    fileIO()
 
-    randLetterGenerator(10)
-    randLetterGenerator(10)
 if __name__ == "__main__":
 
     main()
