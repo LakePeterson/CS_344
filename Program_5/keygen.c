@@ -54,7 +54,7 @@ void generateKey(int argc, char const* argv)
 
     commandArgLength = atoi(argv);                                              // Using atoi this will convert the string into an integer.
     buffer = commandArgLength + 1;                                              // Buffer is used to set the size of the key string.
-    keyCharacters =" QWERTYUIOPASDFGHJKLZXCVBNM";                               // String of characters that are used for random number selection.
+    keyCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";;                              // String of characters that are used for random number selection.
 
     char keyGen[buffer];
 
@@ -66,7 +66,7 @@ void generateKey(int argc, char const* argv)
 
     keyGen[commandArgLength] = '\0';                                            // Once the key has been created assign a NULL terminator to the end.
 
-    printf("Generated Key: %s\n", keyGen);                                      // Print out the created key.
+    printf("%s\n", keyGen);                                                     // Print out the created key.
   }
   else
   {

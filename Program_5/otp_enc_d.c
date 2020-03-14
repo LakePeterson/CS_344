@@ -1,0 +1,256 @@
+/**********************************************************************
+** * Program: opt_enc_d
+** * Author: Lake Peterson
+** * Date: March 13, 2020
+** * Description: Performs the server side encryption
+** * Input: Reads in the message from the file specified in the command line
+** * Output: Returns the encrypted message back to the client
+**********************************************************************/
+
+/**********************************************************************
+** * Included Libraries
+**********************************************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+/**********************************************************************
+** * Global Variables
+**********************************************************************/
+
+#define BUFFER (int)100000
+
+/**********************************************************************
+** * Prototypes
+**********************************************************************/
+
+char* encryptMessage(char*, char*);
+void error(const char*);
+
+/**********************************************************************
+** * Function: main
+**********************************************************************/
+
+int main(int argc, char const *argv[])
+{
+  int listenSocketFD;
+  int establishedConnectionFD;
+  int portNumber;
+  int charsRead;
+  int pid;
+	socklen_t sizeOfClientInfo;
+	char buffer[BUFFER];
+  char message[BUFFER];
+  char key[BUFFER];
+	struct sockaddr_in serverAddress;
+  struct sockaddr_in clientAddress;
+  FILE* openFile;
+  FILE* openKey;
+
+  if(argc != 2)                                                                 // Check usage & args
+  {
+    fprintf(stderr,"USAGE: %s port\n", argv[0]);
+    exit(1);
+  }
+                                                                                // Set up the address struct for this process (the server)
+	memset((char *)&serverAddress, '\0', sizeof(serverAddress));                  // Clear out the address struct
+	portNumber = atoi(argv[1]);                                                   // Get the port number, convert to an integer from a string
+	serverAddress.sin_family = AF_INET;                                           // Create a network-capable socket
+	serverAddress.sin_port = htons(portNumber);                                   // Store the port number
+	serverAddress.sin_addr.s_addr = INADDR_ANY;                                   // Any address is allowed for connection to this process
+
+	listenSocketFD = socket(AF_INET, SOCK_STREAM, 0);                             // Set up the socket and create the socket
+
+	if(listenSocketFD < 0)                                                        // Ensure that the socket has been opened
+  {
+    error("ERROR opening socket");
+  }
+
+	if(bind(listenSocketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0)  // Enable the socket to begin listening and connect socket
+  {                                                                                      // to port
+		error("ERROR on binding");
+  }
+	listen(listenSocketFD, 5);                                                    // Flip the socket on - it can now receive up to 5 connections
+
+  while(1)
+  {                                                                             // Accept a connection, blocking if one is not available until one connects
+    sizeOfClientInfo = sizeof(clientAddress);                                   // Get the size of the address for the client that will connect
+    establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept
+
+    if(establishedConnectionFD < 0)                                             // Make sure that the connection has been established
+    {
+      error("ERROR on accept");
+    }
+
+    pid = fork();                                                               // Retrieve the PID
+
+    if(pid < 0)                                                                 // If the PID is less then zero there is an error with the fork process
+    {
+      fprintf(stderr, "HULL BREACH\n");
+      exit(1);
+    }
+
+    if(pid == 0)                                                                // If the pid is zero then continue process normally
+    {
+      memset(buffer, '\0', BUFFER);                                             // Get the message from the client and display it
+      charsRead = recv(establishedConnectionFD, buffer, BUFFER, 0);             // Read the client's message from the socket
+
+      if(charsRead < 0)                                                         // Checks for an error when reading from the socket
+      {
+        error("ERROR reading from socket");
+      }
+
+      openFile = fopen(buffer, "r");                                            // Open the file provided from the client
+
+      if(openFile == NULL)                                                      // Make sure the file was opened successfully
+      {
+        error("Failed");
+      }
+      fgets(message, BUFFER, openFile);                                         // Puts the file into the message variable
+                                                                                // Send a Success message back to the client
+      charsRead = send(establishedConnectionFD, "I am the server, and I got your file", 39, 0); // Send success back
+
+      if(charsRead < 0)                                                         // Checks for an error when writing to the socket
+      {
+        error("ERROR writing to socket");
+      }
+
+      memset(buffer, '\0', BUFFER);                                             // Get the message from the client and display it
+      charsRead = recv(establishedConnectionFD, buffer, BUFFER, 0);             // Read the client's message from the socket
+
+      if(charsRead < 0)                                                         // Checks for an error when reading from the socket
+      {
+        error("ERROR reading from socket");
+      }
+
+      openKey = fopen(buffer, "r");                                             // Open the key provided from the client
+
+      if(openKey == NULL)                                                       // Make sure the key was opened successfully
+      {
+        error("Failed");
+      }
+      fgets(key, BUFFER, openKey);                                              // Puts the key into the key variable
+                                                                                // Send a Success message back to the client
+      charsRead = send(establishedConnectionFD, "I am the server, and I got your key", 39, 0); // Send success back
+
+      if(charsRead < 0)                                                         // Checks for an error when writing to the socket
+      {
+        error("ERROR writing to socket");
+      }
+
+      charsRead = send(establishedConnectionFD, encryptMessage(key, message), strlen(message), 0); // Send success back
+
+      if(charsRead < 0)                                                         // Checks for an error when writing to the socket
+      {
+        error("ERROR writing to socket");
+      }
+
+      fclose(openKey);                                                          // Close the key file
+      fclose(openFile);                                                         // Close the message file
+    }
+    close(establishedConnectionFD);                                             // Close the existing socket which is connected to the client
+  }
+	close(listenSocketFD);                                                        // Close the listening socket
+
+  return 0;
+}
+
+/**********************************************************************
+** * Function: encryptMessage
+** * Description: Encrypts the message that is provided
+** * Parameters: char* key, char* token
+** * Pre-Conditions: A message must be provided
+** * Post-Conditions: Returns an encrypted version of the message
+**********************************************************************/
+
+char* encryptMessage(char* key, char* token)
+{
+  int tokenLength;
+  int tokenValue;
+  int keyLength;
+  int keyValue;
+  int i = 0;
+  int j = 0;
+  char saveEncrypt[BUFFER];
+  char* encryptedToken;
+  char* keyCharacters;
+
+  tokenLength = strlen(token);                                                  // Finds the length of the message
+  keyLength = strlen(key);                                                      // Finds the length of the key
+
+  if(keyLength > tokenLength)                                                   // Check to make sure the key is longer then the message
+  {
+    encryptedToken = malloc(tokenLength * sizeof(char));                        // Allocate memory because we cant return a local variable
+    keyCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";                              // Valid characters that we can choose from
+
+    for(j = 0; j < tokenLength; j++)                                            // Loop through the length of the provided token
+    {
+      if(token[i] < 65 || token[i] > 90 && token[i] != ' ')                     // Make sure that all the characters are valid
+      {
+        fprintf(stderr, "otp_enc_d error: input contains bad characters\n");
+        exit(1);
+      }
+    }
+
+    while(i < tokenLength - 1)                                                  // Loop through the length of the message
+    {
+      if(token[i] != ' ' && key[i] != ' ')                                      // Check to see if both of the characters are letter
+      {
+        tokenValue = token[i] - 65;                                             // Since this is a letter subtract by the ascii value of A == 65
+        keyValue = key[i] - 65;                                                 // Since this is a letter subtract by the ascii value of A == 65
+        saveEncrypt[i] = ("%c", keyCharacters[(tokenValue + keyValue) % 27]);   // Save the encrypted character
+      }
+      else if(token[i] != ' ' && key[i] == ' ')                                 // Check to see if message is a character and key is a space
+      {
+        tokenValue = token[i] - 65;                                             // Since this is a letter subtract by the ascii value of A == 65
+        keyValue = key[i] - 6;                                                  // Since this is a space subtract by the ascii value of 6
+        saveEncrypt[i] = ("%c", keyCharacters[(tokenValue + keyValue) % 27]);   // Save the encrypted character
+      }
+      else if(token[i] == ' ' && key[i] != ' ')                                 // Check to see if key is a character and key is a character
+      {
+        tokenValue = token[i] - 6;                                              // Since this is a space subtract by the ascii value of 6
+        keyValue = key[i] - 65;                                                 // Since this is a letter subtract by the ascii value of A == 65
+        saveEncrypt[i] = ("%c", keyCharacters[(tokenValue + keyValue) % 27]);   // Save the encrypted character
+      }
+      else                                                                      // Check to see if both of the characters are a space
+      {
+        tokenValue = token[i] - 6;                                              // Since this is a space subtract by the ascii value of 6
+        keyValue = key[i] - 6;                                                  // Since this is a space subtract by the ascii value of 6
+        saveEncrypt[i] = ("%c", keyCharacters[(tokenValue + keyValue) % 27]);   // Save the encrypted character
+      }
+
+      i++;                                                                      // Increment i
+    }
+
+    saveEncrypt[tokenLength - 1] = '\n';                                        // Create a newline character at the end of the line
+    strcpy(encryptedToken, saveEncrypt);
+    saveEncrypt[tokenLength] = '\0';                                            // Create a null terminator at the end of the line
+    strcpy(encryptedToken, saveEncrypt);
+
+    return encryptedToken;                                                      // Return the encrypted message
+  }
+  else                                                                          // Check to make sure the key is longer then the message
+  {
+    printf("Error: key is too short\n");
+    exit(1);
+  }
+}
+
+/**********************************************************************
+** * Function: error
+** * Description: Prints out an error message
+** * Parameters: const char* message
+** * Pre-Conditions: User must indicate what error message they want
+** * Post-Conditions: The exit status must be one
+**********************************************************************/
+
+void error(const char* message)
+{
+  perror(message);                                                              // Error function used for reporting issues
+  exit(1);
+}
