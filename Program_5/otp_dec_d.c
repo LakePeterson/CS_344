@@ -120,7 +120,6 @@ int main(int argc, char const *argv[])
         error("ERROR writing to socket");
       }
 
-      /********************************************************************************************************************************************/
       memset(buffer, '\0', BUFFER);                                             // Get the message from the client and display it
       charsRead = recv(establishedConnectionFD, buffer, BUFFER, 0);             // Read the client's message from the socket
 
@@ -143,7 +142,6 @@ int main(int argc, char const *argv[])
       {
         error("ERROR writing to socket");
       }
-      /********************************************************************************************************************************************/
 
       charsRead = send(establishedConnectionFD, decryptMessage(key, message), strlen(message), 0); // Send success back
 
