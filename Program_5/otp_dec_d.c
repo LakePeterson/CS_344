@@ -43,14 +43,15 @@ int main(int argc, char const *argv[])
   int portNumber;
   int charsRead;
   int pid;
+  int messageLength;
+  int keyLength;
+  int i = 0;
 	socklen_t sizeOfClientInfo;
-	char buffer[BUFFER];
-  char message[BUFFER];
-  char key[BUFFER];
+	char buffer[BUFFER] = "";
+  char message[BUFFER] = "";
+  char key[BUFFER] = "";
 	struct sockaddr_in serverAddress;
   struct sockaddr_in clientAddress;
-  FILE* openCypher;
-  FILE* openKey;
 
   if(argc != 2)                                                                 // Check usage & args
   {
@@ -78,7 +79,10 @@ int main(int argc, char const *argv[])
 	listen(listenSocketFD, 5);                                                    // Flip the socket on - it can now receive up to 5 connections
 
   while(1)
-  {                                                                             // Accept a connection, blocking if one is not available until one connects
+  {
+    char message[BUFFER] = "";
+    char key[BUFFER] = "";
+                                                                // Accept a connection, blocking if one is not available until one connects
     sizeOfClientInfo = sizeof(clientAddress);                                   // Get the size of the address for the client that will connect
     establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept
 
@@ -97,28 +101,7 @@ int main(int argc, char const *argv[])
 
     if(pid == 0)                                                                // If the pid is zero then continue process normally
     {
-      memset(buffer, '\0', BUFFER);                                             // Get the message from the client and display it
-      charsRead = recv(establishedConnectionFD, buffer, BUFFER, 0);             // Read the client's message from the socket
-
-      if(charsRead < 0)                                                         // Checks for an error when reading from the socket
-      {
-        error("ERROR reading from socket");
-      }
-
-      openCypher = fopen(buffer, "r");                                          // Open the cyphertext file provided from the client
-
-      if(openCypher == NULL)                                                    // Make sure the cyphertext file was opened successfully
-      {
-        error("Failed");
-      }
-      fgets(message, BUFFER, openCypher);                                       // Puts the file into the message variable
-                                                                                // Send a Success message back to the client
-      charsRead = send(establishedConnectionFD, "I am the server, and I got your file", 39, 0); // Send success back
-
-      if(charsRead < 0)                                                         // Checks for an error when writing to the socket
-      {
-        error("ERROR writing to socket");
-      }
+      /**************************************************************GET THE MESSAGE LENGTH**************************************************************/
 
       memset(buffer, '\0', BUFFER);                                             // Get the message from the client and display it
       charsRead = recv(establishedConnectionFD, buffer, BUFFER, 0);             // Read the client's message from the socket
@@ -128,30 +111,127 @@ int main(int argc, char const *argv[])
         error("ERROR reading from socket");
       }
 
-      openKey = fopen(buffer, "r");                                             // Open the key provided from the client
-
-      if(openKey == NULL)                                                       // Make sure the key was opened successfully
-      {
-        error("Failed");
-      }
-      fgets(key, BUFFER, openKey);                                              // Puts the key into the key variable
+      messageLength = atoi(buffer);
                                                                                 // Send a Success message back to the client
-      charsRead = send(establishedConnectionFD, "I am the server, and I got your key", 39, 0); // Send success back
+      charsRead = send(establishedConnectionFD, "xMarker", 1, 0); // Send success back
 
       if(charsRead < 0)                                                         // Checks for an error when writing to the socket
       {
         error("ERROR writing to socket");
       }
 
-      charsRead = send(establishedConnectionFD, decryptMessage(key, message), strlen(message), 0); // Send success back
+      /****************************************************************GET THE KEY LENGTH****************************************************************/
+
+      memset(buffer, '\0', BUFFER);                                             // Get the message from the client and display it
+      charsRead = recv(establishedConnectionFD, buffer, BUFFER, 0);             // Read the client's message from the socket
+
+      if(charsRead < 0)                                                         // Checks for an error when reading from the socket
+      {
+        error("ERROR reading from socket");
+      }
+
+      keyLength = atoi(buffer);
+                                                                                // Send a Success message back to the client
+      charsRead = send(establishedConnectionFD, "I am the server, and I got your keyLength", 39, 0); // Send success back
 
       if(charsRead < 0)                                                         // Checks for an error when writing to the socket
       {
         error("ERROR writing to socket");
       }
 
-      fclose(openKey);                                                          // Close the key file
-      fclose(openCypher);                                                       // Close the message file
+      /*****************************************************************GET THE MESSAGE******************************************************************/
+
+      memset(buffer, '\0', BUFFER);                                             // Get the message from the client and display it
+      charsRead = recv(establishedConnectionFD, buffer, BUFFER, 0);             // Read the client's message from the socket
+
+      if(charsRead < 0)                                                         // Checks for an error when reading from the socket
+      {
+        error("ERROR reading from socket");
+      }
+
+      strcat(message, buffer);                                                  // Adds read data to the destination of choice
+      messageLength -= strlen(buffer);
+
+      while(messageLength != 0)                                                 // Loop until all data has been read correctly
+      {
+        if(strlen(buffer) == 0)                                                 // Check for when there is nothing in the file
+        {
+          break;
+        }
+        else
+        {
+          memset(buffer, '\0', BUFFER);                                         // Clear out the buffer again for reuse
+          charsRead = recv(establishedConnectionFD, buffer, BUFFER, 0);         // Read data from the socket, leaving \0 at end
+
+          if(charsRead < 0)                                                     // Checks for an error when reading from the socket
+          {
+            error("CLIENT: ERROR reading from socket");
+          }
+          messageLength -= strlen(buffer);                                      // Decrements the length
+          strcat(message, buffer);                                              // Adds read data to the destination of choice
+        }
+      }
+                                                                                // Send a Success message back to the client
+      charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); // Send success back
+
+      if(charsRead < 0)                                                         // Checks for an error when writing to the socket
+      {
+        error("ERROR writing to socket");
+      }
+
+      /********************************************************************GET THE KEY********************************************************************/
+
+      memset(buffer, '\0', BUFFER);                                             // Get the message from the client and display it
+      charsRead = recv(establishedConnectionFD, buffer, BUFFER, 0);             // Read the client's message from the socket
+
+      if(charsRead < 0)                                                         // Checks for an error when reading from the socket
+      {
+        error("ERROR reading from socket");
+      }
+
+      strcat(key, buffer);                                                      // Adds read data to the destination of choice
+      keyLength -= strlen(buffer);
+
+      while(keyLength != 0)                                                     // Loop until all data has been read correctly
+      {
+        if(strlen(buffer) == 0)                                                 // Check for when there is nothing in the file
+        {
+          break;
+        }
+        else
+        {
+          memset(buffer, '\0', BUFFER);                                         // Clear out the buffer again for reuse
+          charsRead = recv(establishedConnectionFD, buffer, BUFFER, 0);         // Read data from the socket, leaving \0 at end
+
+          if(charsRead < 0)                                                     // Checks for an error when reading from the socket
+          {
+            error("CLIENT: ERROR reading from socket");
+          }
+          keyLength -= strlen(buffer);                                          // Decrements the length
+          strcat(key, buffer);                                                  // Adds read data to the destination of choice
+        }
+      }
+                                                                                // Send a Success message back to the client
+      charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); // Send success back
+
+      if(charsRead < 0)                                                         // Checks for an error when writing to the socket
+      {
+        error("ERROR writing to socket");
+      }
+
+      /**************************************************************SEND THE ENC MESSAGE***************************************************************/
+
+      charsRead = send(establishedConnectionFD, decryptMessage(key, message), strlen(message), 0); // Send encrypted message back
+
+      if(charsRead < 0)                                                         // Checks for an error when writing to the socket
+      {
+        error("ERROR writing to socket");
+      }
+
+    	if(charsRead < strlen(message))                                           // Checks to make sure all the data has transferred across socket
+      {
+        printf("WARNING: Not all data written to socket!\n");
+      }
     }
     close(establishedConnectionFD);                                             // Close the existing socket which is connected to the client
   }

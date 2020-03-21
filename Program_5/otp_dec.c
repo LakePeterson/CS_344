@@ -1,5 +1,5 @@
 /**********************************************************************
-** * Program: opt_dec_d
+** * Program: opt_dec
 ** * Author: Lake Peterson
 ** * Date: March 13, 2020
 ** * Description: Performs the client side decryption
@@ -43,8 +43,16 @@ int main(int argc, char const *argv[])
   int charsWritten;
   int charsRead;
   long int messageLength;
+  long int keyLength;
+  char messageLengthC[BUFFER];
+  char keyLengthC[BUFFER];
   char buffer[BUFFER];
-  FILE *findFileSize;
+  char message[BUFFER];
+  char key[BUFFER];
+  FILE* findFileSize;
+  FILE* findKeySize;
+  FILE* openFile;
+  FILE* openKey;
 	struct sockaddr_in serverAddress;
 	struct hostent* serverHostInfo;
 
@@ -79,18 +87,44 @@ int main(int argc, char const *argv[])
 		error("CLIENT: ERROR connecting");
   }
 
+  openFile = fopen(argv[1], "r");                                               // Open the file provided from the client
+
+  if(openFile == NULL)                                                          // Make sure the file was opened successfully
+  {
+    error("Failed");
+  }
+  fgets(message, BUFFER, openFile);                                             // Puts the file into the message variable
+
+  openKey = fopen(argv[2], "r");                                                // Open the key provided from the client
+
+  if(openKey == NULL)                                                           // Make sure the key was opened successfully
+  {
+    error("Failed");
+  }
+  fgets(key, BUFFER, openKey);                                                  // Puts the key into the key variable
+
   findFileSize = fopen(argv[1], "r+");                                          // Find the file size in order determine when when to stop recieving
   fseek(findFileSize, 0L, SEEK_END);
   messageLength = ftell(findFileSize);
   fclose(findFileSize);                                                         // Close the file once finished
 
-	charsWritten = send(socketFD, argv[1], strlen(argv[1]), 0);                   // Send message to server and write to the server
+  findKeySize = fopen(argv[2], "r+");                                           // Find the key file size in order determine when when to stop recieving
+  fseek(findKeySize, 0L, SEEK_END);
+  keyLength = ftell(findKeySize);
+  fclose(findKeySize);                                                          // Close the key file once finished
+
+  sprintf(messageLengthC, "%d", messageLength);
+  sprintf(keyLengthC, "%d", keyLength);
+
+  /*****************************************************************SEND THE MESSAGE LENGTH*****************************************************************/
+
+  charsWritten = send(socketFD, messageLengthC, strlen(messageLengthC), 0);     // Send message to server and write to the server
 
 	if(charsWritten < 0)                                                          // Checks for an error when writing to the socket
   {
     error("CLIENT: ERROR writing to socket");
   }
-	if(charsWritten < strlen(argv[1]))                                            // Checks to make sure all the data has transferred across socket
+	if(charsWritten < strlen(messageLengthC))                                     // Checks to make sure all the data has transferred across socket
   {
     printf("CLIENT: WARNING: Not all data written to socket!\n");
   }
@@ -98,18 +132,26 @@ int main(int argc, char const *argv[])
 	memset(buffer, '\0', BUFFER);                                                 // Get return message from server and clear out the buffer again for reuse
 	charsRead = recv(socketFD, buffer, BUFFER, 0);                                // Read data from the socket, leaving \0 at end
 
+  if(buffer[0] != 'x')
+  {
+    fprintf(stderr, "ERROR Not A Valid Connection");
+    exit(2);
+  }
+
 	if(charsRead < 0)                                                             // Checks for an error when reading from the socket
   {
     error("CLIENT: ERROR reading from socket");
   }
 
-  charsWritten = send(socketFD, argv[2], strlen(argv[2]), 0);                   // Send message to server and write to the server
+  /*******************************************************************SEND THE KEY LENGTH*******************************************************************/
+
+  charsWritten = send(socketFD, keyLengthC, strlen(keyLengthC), 0);             // Send message to server and write to the server
 
 	if(charsWritten < 0)                                                          // Checks for an error when writing to the socket
   {
     error("CLIENT: ERROR writing to socket");
   }
-	if(charsWritten < strlen(argv[2]))                                            // Checks to make sure all the data has transferred across socket
+	if(charsWritten < strlen(keyLengthC))                                         // Checks to make sure all the data has transferred across socket
   {
     fprintf(stderr, "CLIENT: WARNING: Not all data written to socket!\n");
   }
@@ -122,8 +164,52 @@ int main(int argc, char const *argv[])
     error("CLIENT: ERROR reading from socket");
   }
 
+  /*******************************************************************SEND THE MESSAGE********************************************************************/
+
+  charsWritten = send(socketFD, message, strlen(message), 0);                   // Send message to server and write to the server
+
+	if(charsWritten < 0)                                                          // Checks for an error when writing to the socket
+  {
+    error("CLIENT: ERROR writing to socket");
+  }
+	if(charsWritten < strlen(message))                                            // Checks to make sure all the data has transferred across socket
+  {
+    fprintf(stderr, "CLIENT: WARNING: Not all data written to socket!\n");
+  }
+
   memset(buffer, '\0', BUFFER);                                                 // Get return message from server and clear out the buffer again for reuse
   charsRead = recv(socketFD, buffer, BUFFER, 0);                                // Read data from the socket, leaving \0 at end
+
+  if(charsRead < 0)                                                             // Checks for an error when reading from the socket
+  {
+    error("CLIENT: ERROR reading from socket");
+  }
+
+  /*********************************************************************SEND THE KEY**********************************************************************/
+
+  charsWritten = send(socketFD, key, strlen(key), 0);                           // Send message to server and write to the server
+
+	if(charsWritten < 0)                                                          // Checks for an error when writing to the socket
+  {
+    error("CLIENT: ERROR writing to socket");
+  }
+	if(charsWritten < strlen(key))                                                // Checks to make sure all the data has transferred across socket
+  {
+    fprintf(stderr, "CLIENT: WARNING: Not all data written to socket!\n");
+  }
+
+  memset(buffer, '\0', BUFFER);                                                 // Get return message from server and clear out the buffer again for reuse
+  charsRead = recv(socketFD, buffer, BUFFER, 0);                                // Read data from the socket, leaving \0 at end
+
+  if(charsRead < 0)                                                             // Checks for an error when reading from the socket
+  {
+    error("CLIENT: ERROR reading from socket");
+  }
+
+  /*****************************************************************SEND THE ENC MESSAGE******************************************************************/
+
+  memset(buffer, '\0', BUFFER);                                                 // Get return message from server and clear out the buffer again for reuse
+  charsRead = recv(socketFD, buffer, 1, 0);                                     // Read data from the socket, leaving \0 at end
 
   if(charsRead < 0)                                                             // Checks for an error when reading from the socket
   {
@@ -142,7 +228,7 @@ int main(int argc, char const *argv[])
     else
     {
       memset(buffer, '\0', BUFFER);                                             // Clear out the buffer again for reuse
-      charsRead = recv(socketFD, buffer, BUFFER, 0);                            // Read data from the socket, leaving \0 at end
+      charsRead = recv(socketFD, buffer, 1, 0);                                 // Read data from the socket, leaving \0 at end
 
       if(charsRead < 0)                                                         // Checks for an error when reading from the socket
       {
