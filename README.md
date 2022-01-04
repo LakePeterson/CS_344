@@ -1,4 +1,4 @@
-# CS 344 Analysis of Algorithms
+# CS 344 Operating Systems I
 This repository is an archive of all the programming assignments for CS 344 at Oregon State University taken winter quarter 2020, taught by Justin Goins.
 
 ## Course Description
